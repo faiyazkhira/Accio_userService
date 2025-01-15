@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,6 +44,22 @@ public class AuthController {
 	public ResponseEntity<Object> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
 		return authService.signupUser(signupRequest);
 
+	}
+
+	@PostMapping("/verify-otp")
+	public ResponseEntity<Object> verifyOtp(@RequestParam String email, @RequestParam String otp) {
+		return authService.verifyOtp(email, otp);
+	}
+
+	@PostMapping("/resend-otp")
+	public ResponseEntity<?> resendOtp(@RequestParam String email) {
+		// Call the resendOTP method from AuthService
+		boolean result = authService.resendOtp(email);
+		if (result) {
+			return ResponseEntity.ok("OTP has been resent successfully.");
+		} else {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to resend OTP. Try again.");
+		}
 	}
 
 }

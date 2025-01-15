@@ -1,5 +1,6 @@
 package com.accio.userService.entity;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -42,6 +43,9 @@ public class User implements UserDetails {
 	private String username;
 	private String email;
 	private String password;
+	private String otp;
+	private LocalDateTime otpexpiry;
+	private Boolean isVerified = false;
 
 	@ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role", referencedColumnName = "id"))

@@ -1,7 +1,9 @@
 package com.accio.userService.service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,22 +29,25 @@ import com.accio.userService.security.JwtAuthenticationHelper;
 public class AuthService {
 
 	@Autowired
-	AuthenticationManager manager;
+	private AuthenticationManager manager;
 
 	@Autowired
-	JwtAuthenticationHelper helper;
+	private JwtAuthenticationHelper helper;
 
 	@Autowired
-	UserDetailsService userDetailsService;
+	private UserDetailsService userDetailsService;
 
 	@Autowired
-	PasswordEncoder passwordEncoder;
+	private PasswordEncoder passwordEncoder;
 
 	@Autowired
-	UserRepository userRepository;
+	private UserRepository userRepository;
 
 	@Autowired
-	RoleRepository roleRepository;
+	private RoleRepository roleRepository;
+
+	@Autowired
+	private EmailService emailService;
 
 	// signin
 	public LoginResponse authenticateUser(LoginRequest loginRequest) {
@@ -51,6 +56,14 @@ public class AuthService {
 		this.doAuthenticate(loginRequest.getUserNameOrEmail(), loginRequest.getPassword());
 
 		UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getUserNameOrEmail());
+		User user = userRepository
+				.findByUsernameOrEmail(loginRequest.getUserNameOrEmail(), loginRequest.getUserNameOrEmail())
+				.orElseThrow(() -> new RuntimeException("User not found"));
+
+		if (!user.getIsVerified()) {
+			throw new RuntimeException("User not verified. Please verify your email");
+		}
+
 		String token = helper.generateToken(userDetails);
 
 		String username = userDetails.getUsername();
@@ -90,7 +103,12 @@ public class AuthService {
 		String encodedPassword = passwordEncoder.encode(signupRequest.getPassword());
 
 		User user = User.builder().username(signupRequest.getUsername()).name(signupRequest.getName())
-				.email(signupRequest.getEmail()).password(encodedPassword).build();
+				.email(signupRequest.getEmail()).password(encodedPassword).isVerified(false).build();
+
+		// Generate Otp
+		String otp = generateOtp();
+		user.setOtp(otp);
+		user.setOtpexpiry(LocalDateTime.now().plusMinutes(10));
 
 		Role userRole = roleRepository.findByNameContaining(signupRequest.getRole())
 				.orElseThrow(() -> new RuntimeException("Role not found"));
@@ -101,6 +119,45 @@ public class AuthService {
 
 		userRepository.save(user);
 
-		return ResponseEntity.ok("User registered successfully");
+		// Send Email
+		emailService.sendEmail(user.getEmail(), "OTP verification", "Your OTP is: " + otp);
+
+		return ResponseEntity.ok("User registered successfully. Please verify your email using the OTP.");
+	}
+
+	private String generateOtp() {
+		return String.valueOf(new Random().nextInt(900000) + 100000);
+	}
+
+	public ResponseEntity<Object> verifyOtp(String email, String otp) {
+		User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+		if (user.getOtp() == null || user.getOtpexpiry() == null || user.getOtpexpiry().isBefore(LocalDateTime.now())) {
+			return ResponseEntity.badRequest().body("OTP has expired");
+		}
+
+		if (!user.getOtp().equals(otp)) {
+			return ResponseEntity.badRequest().body("Invalid OTP");
+		}
+
+		user.setIsVerified(true);
+		user.setOtp(null);
+		user.setOtpexpiry(null);
+		userRepository.save(user);
+
+		return ResponseEntity.ok("User verified successfully");
+	}
+
+	public ResponseEntity<Object> resendOtp(String email) {
+		User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+		String newOtp = generateOtp();
+		user.setOtp(newOtp);
+		user.setOtpexpiry(LocalDateTime.now().plusMinutes(10));
+		userRepository.save(user);
+
+		emailService.sendEmail(newOtp, "Resend OTP", "Your new OTP is: " + newOtp);
+
+		return ResponseEntity.ok("New OTP sent successfully");
 	}
 }
