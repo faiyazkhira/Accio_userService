@@ -54,8 +54,8 @@ public class AuthController {
 	@PostMapping("/resend-otp")
 	public ResponseEntity<?> resendOtp(@RequestParam String email) {
 		// Call the resendOTP method from AuthService
-		boolean result = authService.resendOtp(email);
-		if (result) {
+		ResponseEntity<Object> result = authService.resendOtp(email);
+		if (result.getStatusCode() == HttpStatus.OK) {
 			return ResponseEntity.ok("OTP has been resent successfully.");
 		} else {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to resend OTP. Try again.");
