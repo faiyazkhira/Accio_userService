@@ -2,6 +2,8 @@ package com.accio.userService.security;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,37 +27,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	@Autowired
 	private UserDetailsService userDetailsService;
 
+	private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
-		String requestHeader = request.getHeader("Authorization");
+		logger.info("Authenticating token");
 
-//		if (requestPath.equals("/api/auth/signup") || requestPath.equals("/api/auth/signin")) {
-//			System.out.println("Skipping JWT filter for: " + requestPath);
-//			filterChain.doFilter(request, response);
-//			return;
-//		}
+		// Extract Authorization header from the request
+		String requestHeader = request.getHeader("Authorization");
 
 		String token = null;
 		String username = null;
 
-		if (requestHeader != null && requestHeader.startsWith("Bearer")) {
-			token = requestHeader.substring(7);
+		try {
+			// Validate the presence and format of the token
+			if (requestHeader != null && requestHeader.startsWith("Bearer")) {
+				token = requestHeader.substring(7);
 
-			username = helper.getUsernameFromToken(token);
+				// Extract username from the token
+				username = helper.getUsernameFromToken(token);
 
-			if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-				UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+				// Check if username exists and authentication is not already set
+				if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+					UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-				if (!helper.isTokenExpired(token) && username.equals(userDetails.getUsername())) {
-					UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-							token, null, userDetails.getAuthorities());
-					usernamePasswordAuthenticationToken
-							.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-					SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+					// Validate token and set authentication
+					if (!helper.isTokenExpired(token) && username.equals(userDetails.getUsername())) {
+						UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+								token, null, userDetails.getAuthorities());
+						usernamePasswordAuthenticationToken
+								.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+						SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+					}
 				}
 			}
+
+		} catch (Exception e) {
+			System.err.println("JWT Authentication failed: " + e.getMessage());
 		}
+
+		// Continue with the filter chain
 		filterChain.doFilter(request, response);
 
 	}

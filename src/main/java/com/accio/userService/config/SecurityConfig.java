@@ -34,10 +34,6 @@ public class SecurityConfig {
 
 		http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
-
-//		http.csrf().disable().authorizeHttpRequests().anyRequest().permitAll(); // Allow all requests without
-//																				// authentication
-//		return http.build();
 	}
 
 	@Bean

@@ -6,6 +6,9 @@ import java.util.Map;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -16,27 +19,59 @@ import io.jsonwebtoken.SignatureAlgorithm;
 @Component
 public class JwtAuthenticationHelper {
 
-	private String secret = "mJ2x!Nz4Qp7R@b9Lk$T#yV5A^o&6Fp*XW!YqMd8Zr7LdUwBn2ZOdE4P6W!ZqMT^dK9F@mL7ZqMpQ";
-	private static final long JWT_TOKEN_VALIDITY = 60 * 60;
+	@Value("${jwt.secret}")
+	private String secret;
 
+	@Value("${jwt.expiration}")
+	private long JWT_TOKEN_VALIDITY;
+
+	private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
+	/**
+	 * Retrieves the username from the JWT token.
+	 *
+	 * @param token the JWT token
+	 * @return the username contained in the token
+	 */
 	public String getUsernameFromToken(String token) {
+		logger.info("Extracting username from token");
 		Claims claims = getClaimsFromToken(token);
 		return claims.getSubject();
 	}
 
+	/**
+	 * Retrieves the claims from the JWT token.
+	 *
+	 * @param token the JWT token
+	 * @return the claims contained in the token
+	 */
 	private Claims getClaimsFromToken(String token) {
+		logger.info("Extracting Claims from token");
 		Claims claims = Jwts.parserBuilder().setSigningKey(secret.getBytes()).build().parseClaimsJws(token).getBody();
 		return claims;
 	}
 
+	/**
+	 * Checks whether the JWT token has expired.
+	 *
+	 * @param token the JWT token
+	 * @return true if the token has expired, otherwise false
+	 */
 	public Boolean isTokenExpired(String token) {
+		logger.info("Validating token expiry");
 		Claims claims = getClaimsFromToken(token);
 		Date expDate = claims.getExpiration();
 		return expDate.before(new Date());
 	}
 
+	/**
+	 * Generates a JWT token based on the provided user details.
+	 *
+	 * @param userDetails the user details
+	 * @return the generated JWT token
+	 */
 	public String generateToken(UserDetails userDetails) {
-
+		logger.info("Generating token");
 		Map<String, Object> claims = new HashMap<>();
 
 		return Jwts.builder().setClaims(claims).setSubject(userDetails.getUsername())

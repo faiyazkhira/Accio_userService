@@ -3,6 +3,7 @@ package com.accio.userService.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +17,10 @@ import com.accio.userService.dto.UserRequest;
 import com.accio.userService.dto.UserResponse;
 import com.accio.userService.service.UserService;
 
+import jakarta.validation.Valid;
+
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserController {
 
 	@Autowired
@@ -25,32 +28,38 @@ public class UserController {
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping("/all")
-	public List<UserResponse> getAllUsers() {
-		return userService.getAllUsers();
+	public ResponseEntity<List<UserResponse>> getAllUsers() {
+		List<UserResponse> users = userService.getAllUsers();
+		return ResponseEntity.ok(users);
 	}
 
 	@PreAuthorize("hasRole('USER')")
 	@GetMapping("/{userId}")
-	public UserResponse getUserById(@PathVariable Long userId) {
-		return userService.getUserById(userId);
+	public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
+		UserResponse userResponse = userService.getUserById(userId);
+		return ResponseEntity.ok(userResponse);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping("/search/{keywords}")
-	public List<UserResponse> searchUserByKeyword(@PathVariable String keywords) {
-		return userService.searchUserByKeyword(keywords);
+	public ResponseEntity<List<UserResponse>> searchUserByKeyword(@PathVariable String keywords) {
+		List<UserResponse> users = userService.searchUserByKeyword(keywords);
+		return ResponseEntity.ok(users);
 	}
 
 	@PreAuthorize("hasRole('USER')")
 	@PutMapping("/{userId}")
-	public String updateUserById(@PathVariable Long userId, @RequestBody UserRequest userRequest) {
-		return userService.updateUserById(userId, userRequest);
+	public ResponseEntity<String> updateUserById(@PathVariable Long userId,
+			@Valid @RequestBody UserRequest userRequest) {
+		String message = userService.updateUserById(userId, userRequest);
+		return ResponseEntity.ok(message);
 	}
 
-	@PreAuthorize("hasRole('USER')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'USER')")
 	@DeleteMapping("/{userId}")
-	public String deleteUser(@PathVariable Long userId) {
-		return userService.deleteUser(userId);
+	public ResponseEntity<String> deleteUser(@PathVariable Long userId) {
+		String message = userService.deleteUser(userId);
+		return ResponseEntity.ok(message);
 	}
 
 }

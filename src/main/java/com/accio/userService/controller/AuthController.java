@@ -28,19 +28,19 @@ public class AuthController {
 	private AuthService authService;
 
 	@GetMapping("/test")
-	public String test() {
-		return "User Service is available now " + new Date(System.currentTimeMillis());
+	public ResponseEntity<String> test() {
+		return ResponseEntity.ok("User Service is available now " + new Date(System.currentTimeMillis()));
 	}
 
 	@PostMapping("/signin")
 	public ResponseEntity<LoginResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-		System.out.println("login req");
-		return new ResponseEntity<LoginResponse>(authService.authenticateUser(loginRequest), HttpStatus.OK);
+		LoginResponse response = authService.authenticateUser(loginRequest);
+		return ResponseEntity.ok(response);
 
 	}
 
-	@ResponseStatus(HttpStatus.CREATED)
 	@PostMapping("/signup")
+	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<Object> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
 		return authService.signupUser(signupRequest);
 
@@ -52,14 +52,9 @@ public class AuthController {
 	}
 
 	@PostMapping("/resend-otp")
-	public ResponseEntity<?> resendOtp(@RequestParam String email) {
-		// Call the resendOTP method from AuthService
-		ResponseEntity<Object> result = authService.resendOtp(email);
-		if (result.getStatusCode() == HttpStatus.OK) {
-			return ResponseEntity.ok("OTP has been resent successfully.");
-		} else {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to resend OTP. Try again.");
-		}
+	public ResponseEntity<String> resendOtp(@RequestParam String email) {
+		return authService.resendOtp(email);
+
 	}
 
 }

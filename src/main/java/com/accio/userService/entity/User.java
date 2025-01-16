@@ -47,7 +47,7 @@ public class User implements UserDetails {
 	private LocalDateTime otpexpiry;
 	private Boolean isVerified = false;
 
-	@ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
 	@JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role", referencedColumnName = "id"))
 	private Set<Role> roles;
 
