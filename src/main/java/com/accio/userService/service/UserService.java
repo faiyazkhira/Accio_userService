@@ -6,11 +6,13 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.accio.userService.dto.UserRequest;
 import com.accio.userService.dto.UserResponse;
 import com.accio.userService.entity.User;
+import com.accio.userService.exception.UserNotFoundException;
 import com.accio.userService.mapper.UserMapper;
 import com.accio.userService.repository.UserRepository;
 
@@ -94,6 +96,12 @@ public class UserService {
 		logger.info("User with ID: {} deleted successfully", userId);
 
 		return "User deleted successfully";
+	}
+
+	public UserResponse getUserByEmail(String email) {
+		User user = userRepository.findByEmail(email).orElseThrow(() -> new UserNotFoundException("User not found"));
+
+		return UserMapper.toUserResponse(user);
 	}
 
 }

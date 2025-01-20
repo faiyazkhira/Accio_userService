@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import com.accio.userService.entity.User;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -73,6 +75,9 @@ public class JwtAuthenticationHelper {
 	public String generateToken(UserDetails userDetails) {
 		logger.info("Generating token");
 		Map<String, Object> claims = new HashMap<>();
+		User user = (User) userDetails;
+		String email = user.getEmail();
+		claims.put("email", email);
 
 		return Jwts.builder().setClaims(claims).setSubject(userDetails.getUsername())
 				.setIssuedAt(new Date(System.currentTimeMillis()))
